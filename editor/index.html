@@ -38,6 +38,11 @@
   #map{image-rendering:pixelated;background:#bfe0f2;border:2px solid var(--edge);cursor:crosshair;display:block;}
   /* Right palette */
   .palette{width:300px;background:var(--panel);border-left:2px solid var(--edge);display:flex;flex-direction:column;}
+  .palette .palzoom{display:flex;align-items:center;gap:6px;padding:8px 10px 0;font-size:12px;color:var(--ink);}
+  .palette .palzoom span{font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.7;margin-right:2px;}
+  .palette .palzoom button{width:28px;height:24px;border:1px solid var(--edge);background:#fff;border-radius:5px;cursor:pointer;font-weight:700;font-size:13px;line-height:1;}
+  .palette .palzoom button:hover{background:#eaf4ff;}
+  .palette .palzoom button#zoomReset{width:auto;padding:0 8px;font-size:11px;}
   .palette .pickwrap{flex:1;overflow:auto;padding:10px;}
   #palette{image-rendering:pixelated;background:#eaf4ff;border:1px solid var(--edge);cursor:pointer;display:block;}
   .selinfo{padding:8px 10px;font-size:11px;color:var(--dim);border-top:1px solid var(--edge);}
@@ -46,12 +51,43 @@
   .legend{font-size:10px;color:var(--dim);line-height:1.5;}
   .legend span{display:inline-block;width:12px;height:12px;vertical-align:middle;margin-right:4px;border:1px solid #000;}
   kbd{background:var(--panel2);border:1px solid var(--edge);border-radius:3px;padding:1px 5px;font-size:10px;}
+  /* Quest editor */
+  .questCard{background:var(--panel2);border:1px solid var(--edge);border-radius:5px;padding:8px;margin-bottom:8px;}
+  .questCard .qhead{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;}
+  .questCard .qid{color:var(--accent);font-weight:bold;font-size:11px;word-break:break-all;}
+  .questCard button.del{background:var(--danger);color:#fff;border-color:var(--danger);padding:2px 7px;font-size:11px;line-height:1;}
+  .obj{background:var(--bg);border:1px solid var(--edge);border-radius:4px;padding:6px;margin:5px 0;}
+  .obj .objrow{display:flex;gap:4px;}
+  .obj select,.obj input{margin-bottom:4px;}
+  .obj input.small{width:48px;}
+  textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--edge);padding:5px;border-radius:4px;font-size:11px;margin-bottom:6px;font-family:"Courier New",monospace;resize:vertical;}
+  .check{font-size:10px;line-height:1.5;border-radius:4px;padding:6px 8px;margin-bottom:6px;}
+  .check.ok{background:#dff0e2;color:#2f6b3f;border:1px solid var(--accent2);}
+  .check.warn{background:#fbe6e0;color:#9a3b2a;border:1px solid var(--danger);}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--edge);border-radius:10px;padding:1px 7px;font-size:10px;margin:2px 2px 0 0;cursor:pointer;}
+  .pill:hover{background:var(--edge);}
+  .hintline{font-size:10px;color:var(--dim);margin:-2px 0 6px;line-height:1.4;}
+  button:disabled{opacity:.4;cursor:default;}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);
+    background:var(--text);color:#fff;padding:7px 16px;border-radius:6px;font-size:12px;
+    opacity:0;pointer-events:none;transition:.2s;z-index:50;}
+  #toast.show{opacity:.95;transform:translateX(-50%) translateY(0);}
+  .entRow{display:flex;align-items:center;gap:5px;background:var(--panel2);border:1px solid var(--edge);border-radius:4px;padding:3px 5px;margin-bottom:3px;font-size:10px;}
+  .entRow .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .entRow .eName{font-weight:bold;color:var(--text);cursor:pointer;text-decoration:underline dotted;}
+  .entRow .eSub{color:var(--dim);}
+  .entRow .eAt{color:var(--dim);margin-left:auto;}
+  .entRow .eDel{padding:1px 6px;font-size:11px;line-height:1;}
 </style>
 </head>
 <body>
 <header>
   <h1>✦ RABBIT RUN: TALES OF THE WARREN MAP EDITOR</h1>
-  <span class="hint">Paint with the mouse &bull; <kbd>1-5</kbd> switch layer &bull; <kbd>Ctrl+S</kbd> export</span>
+  <span class="hint">Paint with the mouse &bull; <kbd>1-5</kbd> switch layer &bull; build quests in the Quests panel &bull; <kbd>Ctrl+Z</kbd> undo &bull; <kbd>Ctrl+S</kbd> export</span>
+  <span style="margin-left:auto;display:flex;gap:6px;">
+    <button id="undoBtn" disabled title="Undo (Ctrl+Z)">&#8634; Undo</button>
+    <button id="redoBtn" disabled title="Redo (Ctrl+Y)">Redo &#8635;</button>
+  </span>
 </header>
 
 <div class="main">
@@ -73,6 +109,7 @@
       <button data-tool="erase">Erase</button>
       <button data-tool="fill">Fill</button>
     </div>
+    <button class="wide" id="clearLayerBtn" style="margin-bottom:6px;">Clear this layer</button>
 
     <h2>Tileset</h2>
     <select id="tilesetSelect"></select>
@@ -84,8 +121,12 @@
         <option value="npc">NPC</option>
         <option value="enemy">Enemy</option>
         <option value="item">Item</option>
+        <option value="trigger">Trigger Zone</option>
+        <option value="door">Door</option>
       </select>
       <div id="entityFields"></div>
+      <h2 style="margin-top:12px;">Placed entities</h2>
+      <div id="entityList"><p class="hintline">Nothing placed yet.</p></div>
     </div>
 
     <h2>Map size</h2>
@@ -104,6 +145,12 @@
       <option value="battle_theme">battle_theme</option>
     </select>
 
+    <h2>Quests</h2>
+    <p class="hintline">Define each quest here, then point an NPC at it (the NPC's "Gives quest" dropdown lists these). No hand-editing JSON needed.</p>
+    <div id="questList"></div>
+    <button class="wide" id="addQuestBtn">+ Add quest</button>
+    <div id="questCheck" style="margin-top:8px;"></div>
+
     <h2>File</h2>
     <button class="wide go" id="exportBtn">⬇ Export map JSON</button>
     <button class="wide" id="importBtn">⬆ Import map JSON</button>
@@ -118,6 +165,12 @@
 
   <!-- ============ RIGHT: TILE PALETTE ============ -->
   <aside class="palette">
+    <div class="palzoom">
+      <span>Zoom</span>
+      <button id="zoomOut" title="Zoom out">-</button>
+      <button id="zoomIn" title="Zoom in">+</button>
+      <button id="zoomReset" title="Fit width">Fit</button>
+    </div>
     <div class="pickwrap">
       <canvas id="palette"></canvas>
     </div>
@@ -153,7 +206,7 @@ const TILESETS = {
   exterior:   { src:"assets/tilesets/exterior.png",   cols:25 },
   house:      { src:"assets/tilesets/house.png",      cols:38 },
   crops:      { src:"assets/tilesets/crops.png",      cols:6  },
-  floor:      { src:"assets/tilesets/floor.png",      cols:11 },
+  floor:      { src:"assets/tilesets/floor_detail.png", cols:11 },
 };
 
 // Sprite previews for entity placement.
@@ -173,6 +226,8 @@ let state = {
   width: 25, height: 18,
   ground: [], decor: [], solid: [],
   entities: [],
+  triggers: [],
+  doors: [],
   playerStart: { col: 12, row: 13 },
 };
 let layer = "ground";
@@ -180,6 +235,7 @@ let tool = "paint";
 let currentTileset = "grass_dirt";
 let selectedTile = 0;        // index within the current tileset
 let entityType = "npc";
+let patrolEditIndex = null;   // when set, map clicks add patrol waypoints to this enemy
 let painting = false;
 
 const mapCanvas = document.getElementById("map");
@@ -209,6 +265,65 @@ function blankMap(w,h){
   resizeCanvas();
 }
 function idx(c,r){return r*state.width+c;}
+
+// =============================================================
+//  UNDO / REDO - snapshot the map before each change
+// =============================================================
+const History = {
+  past: [], future: [], max: 50,
+  snapshot(){
+    // deep copy the parts of state that edits can change
+    return JSON.stringify({
+      width:state.width, height:state.height,
+      ground:state.ground, overlay:state.overlay, decor:state.decor, solid:state.solid,
+      entities:state.entities, playerStart:state.playerStart, quests:state.quests,
+    });
+  },
+  // call BEFORE a change you want to be undoable
+  record(){
+    this.past.push(this.snapshot());
+    if(this.past.length>this.max) this.past.shift();
+    this.future.length=0;   // a new edit clears the redo stack
+    updateUndoButtons();
+  },
+  restore(snap){
+    const s=JSON.parse(snap);
+    state.width=s.width; state.height=s.height;
+    state.ground=s.ground; state.overlay=s.overlay; state.decor=s.decor; state.solid=s.solid;
+    state.entities=s.entities; state.playerStart=s.playerStart; state.quests=s.quests;
+    resizeCanvas(); renderMap();
+    if(typeof renderQuests==="function") renderQuests();
+    if(typeof renderEntityList==="function") renderEntityList();
+  },
+  undo(){
+    if(!this.past.length) return;
+    this.future.push(this.snapshot());
+    this.restore(this.past.pop());
+    updateUndoButtons(); toast("Undo");
+  },
+  redo(){
+    if(!this.future.length) return;
+    this.past.push(this.snapshot());
+    this.restore(this.future.pop());
+    updateUndoButtons(); toast("Redo");
+  },
+};
+function updateUndoButtons(){
+  const u=document.getElementById("undoBtn"), r=document.getElementById("redoBtn");
+  if(u) u.disabled=!History.past.length;
+  if(r) r.disabled=!History.future.length;
+}
+
+// Small status toast (bottom of the screen)
+let _toastTimer=null;
+function toast(msg){
+  let el=document.getElementById("toast");
+  if(!el){ el=document.createElement("div"); el.id="toast"; document.body.appendChild(el); }
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove("show"),1400);
+}
+
 function resizeCanvas(){
   mapCanvas.width=state.width*CELL;
   mapCanvas.height=state.height*CELL;
@@ -252,8 +367,49 @@ function renderMap(){
   }
   // entities
   for(const e of state.entities) drawEntityMarker(e);
+  // patrol routes (lines connecting an enemy's waypoints)
+  for(const e of state.entities){
+    if(e.kind==="enemy" && e.patrol && e.patrol.length){
+      mapCtx.strokeStyle = (patrolEditIndex===state.entities.indexOf(e)) ? "#5fd28a" : "rgba(95,168,111,0.8)";
+      mapCtx.lineWidth=2; mapCtx.setLineDash([6,4]);
+      mapCtx.beginPath();
+      mapCtx.moveTo(e.col*CELL+CELL/2, e.row*CELL+CELL/2);
+      for(const wp of e.patrol) mapCtx.lineTo(wp.col*CELL+CELL/2, wp.row*CELL+CELL/2);
+      if(e.patrol.length>1) mapCtx.lineTo(e.patrol[0].col*CELL+CELL/2, e.patrol[0].row*CELL+CELL/2); // loop back
+      mapCtx.stroke(); mapCtx.setLineDash([]);
+      e.patrol.forEach((wp,wi)=>{
+        mapCtx.fillStyle="#5fa86f";
+        mapCtx.beginPath(); mapCtx.arc(wp.col*CELL+CELL/2, wp.row*CELL+CELL/2, 6, 0, Math.PI*2); mapCtx.fill();
+        mapCtx.fillStyle="#fff"; mapCtx.font="bold 10px monospace"; mapCtx.textAlign="center";
+        mapCtx.fillText(wi+1, wp.col*CELL+CELL/2, wp.row*CELL+CELL/2+3); mapCtx.textAlign="left";
+      });
+    }
+  }
+  // trigger zones (translucent boxes with their id)
+  for(const z of (state.triggers||[])){
+    mapCtx.fillStyle="rgba(201,138,43,0.22)";
+    mapCtx.fillRect(z.col*CELL, z.row*CELL, (z.w||1)*CELL, (z.h||1)*CELL);
+    mapCtx.strokeStyle="#c98a2b"; mapCtx.lineWidth=2; mapCtx.setLineDash([5,3]);
+    mapCtx.strokeRect(z.col*CELL, z.row*CELL, (z.w||1)*CELL, (z.h||1)*CELL); mapCtx.setLineDash([]);
+    mapCtx.fillStyle="#7a5618"; mapCtx.font="bold 11px monospace";
+    mapCtx.fillText("⚑ "+(z.id||"zone"), z.col*CELL+4, z.row*CELL+14);
+  }
+  // doors (golden boxes pointing to another map)
+  for(const d of (state.doors||[])){
+    mapCtx.fillStyle="rgba(255,210,74,0.30)";
+    mapCtx.fillRect(d.col*CELL, d.row*CELL, CELL, CELL);
+    mapCtx.strokeStyle="#e0a020"; mapCtx.lineWidth=2;
+    mapCtx.strokeRect(d.col*CELL+1, d.row*CELL+1, CELL-2, CELL-2);
+    mapCtx.fillStyle="#7a5618"; mapCtx.font="bold 10px monospace";
+    mapCtx.fillText("\u2192"+(d.toMap||"map").replace("map_",""), d.col*CELL+3, d.row*CELL+13);
+  }
   // player start
   drawPlayerStart();
+  // flash highlight when jumping to an entity from the list
+  if(flashCell){
+    mapCtx.strokeStyle="#ffd23f"; mapCtx.lineWidth=4;
+    mapCtx.strokeRect(flashCell.col*CELL+1, flashCell.row*CELL+1, CELL-2, CELL-2);
+  }
 }
 function drawEntityMarker(e){
   const x=e.col*CELL, y=e.row*CELL;
@@ -281,27 +437,31 @@ function drawPlayerStart(){
 }
 
 // ---- Render the tile palette for the current tileset ----
+// The tileset is shown in its own native column layout with a grid on top, so
+// multi-tile sprites stay whole. paletteZoom scales the tiles up so the user can
+// zoom in for a closer look; the panel scrolls both ways when zoomed past fit.
+let paletteZoom = 1;   // 1 = fit panel width; >1 = zoomed in
 function renderPalette(){
   const set=TILESETS[currentTileset], img=images[currentTileset];
   if(!img) return;
-  const total=set.cols*Math.ceil(img.height/TILE);
-  const rows=Math.ceil(total/PALETTE_COLS);
-  const cell=Math.floor((palCanvas.parentElement.clientWidth-30)/PALETTE_COLS);
-  palCanvas.width=PALETTE_COLS*cell;
-  palCanvas.height=rows*cell;
+  const cols=set.cols;
+  const sheetRows=Math.ceil(img.height/TILE);
+  const total=cols*sheetRows;
+  // base cell = fit-to-width; multiply by the zoom factor
+  const fitCell=Math.max(8,Math.floor((palCanvas.parentElement.clientWidth-22)/cols));
+  const cell=Math.round(fitCell*paletteZoom);
+  palCanvas.width=cols*cell;
+  palCanvas.height=sheetRows*cell;
   palCtx.imageSmoothingEnabled=false;
   palCtx.fillStyle="#eaf4ff";palCtx.fillRect(0,0,palCanvas.width,palCanvas.height);
-  for(let i=0;i<total;i++){
-    const c=i%PALETTE_COLS, r=Math.floor(i/PALETTE_COLS);
-    drawTileTo(palCtx,`${currentTileset}:${i}`,c*cell,r*cell,cell);
-    palCtx.strokeStyle="rgba(45,62,80,0.10)";
-    palCtx.strokeRect(c*cell,r*cell,cell,cell);
-    if(i===selectedTile){
-      palCtx.strokeStyle="#ffd166";palCtx.lineWidth=3;
-      palCtx.strokeRect(c*cell+1,r*cell+1,cell-2,cell-2);palCtx.lineWidth=1;
-    }
-  }
-  palCanvas._cell=cell; palCanvas._total=total;
+  palCtx.drawImage(img,0,0,img.width,img.height,0,0,cols*cell,sheetRows*cell);
+  palCtx.strokeStyle="rgba(45,62,80,0.18)";palCtx.lineWidth=1;
+  for(let c=0;c<=cols;c++){palCtx.beginPath();palCtx.moveTo(c*cell,0);palCtx.lineTo(c*cell,palCanvas.height);palCtx.stroke();}
+  for(let r=0;r<=sheetRows;r++){palCtx.beginPath();palCtx.moveTo(0,r*cell);palCtx.lineTo(palCanvas.width,r*cell);palCtx.stroke();}
+  const sc=selectedTile%cols, sr=Math.floor(selectedTile/cols);
+  palCtx.strokeStyle="#ffd166";palCtx.lineWidth=3;
+  palCtx.strokeRect(sc*cell+1,sr*cell+1,cell-2,cell-2);palCtx.lineWidth=1;
+  palCanvas._cell=cell; palCanvas._cols=cols; palCanvas._total=total;
   updateSelInfo();
 }
 function updateSelInfo(){
@@ -353,23 +513,67 @@ function floodFill(layerName,c,r,from,to){
   }
 }
 function placeEntity(c,r){
+  // ---- Patrol waypoint mode: clicks add waypoints to the selected enemy ----
+  if(patrolEditIndex!==null){
+    const e=state.entities[patrolEditIndex];
+    if(e&&e.kind==="enemy"){
+      if(!e.patrol) e.patrol=[];
+      History.record();
+      e.patrol.push({col:c,row:r});
+      renderMap(); renderEntityList();
+      if(typeof toast==="function") toast("Waypoint "+e.patrol.length+" added (click more, or press Done)");
+      return;
+    }
+  }
   if(tool==="erase"){
     state.entities=state.entities.filter(e=>!(e.col===c&&e.row===r));
+    if(state.triggers) state.triggers=state.triggers.filter(z=>!(z.col===c&&z.row===r));
+    if(state.doors) state.doors=state.doors.filter(d=>!(d.col===c&&d.row===r));
     return;
   }
   if(entityType==="player"){ state.playerStart={col:c,row:r}; return; }
+  if(entityType==="trigger"){
+    const f=getEntityFieldValues();
+    History.record();
+    state.triggers=state.triggers||[];
+    state.triggers=state.triggers.filter(z=>!(z.col===c&&z.row===r));
+    state.triggers.push({id:f.tid,col:c,row:r,w:Math.max(1,f.tw),h:Math.max(1,f.th)});
+    renderMap(); if(typeof renderEntityList==="function") renderEntityList();
+    return;
+  }
+  if(entityType==="door"){
+    const f=getEntityFieldValues();
+    History.record();
+    state.doors=state.doors||[];
+    state.doors=state.doors.filter(d=>!(d.col===c&&d.row===r));
+    state.doors.push({col:c,row:r,w:1,h:1,toMap:f.dmap,toCol:f.dcol,toRow:f.drow});
+    renderMap(); if(typeof renderEntityList==="function") renderEntityList();
+    return;
+  }
   // remove any existing entity in this cell first
   state.entities=state.entities.filter(e=>!(e.col===c&&e.row===r));
   const f=getEntityFieldValues();
   if(entityType==="npc"){
-    state.entities.push({kind:"npc",col:c,row:r,sprite:f.sprite,frames:f.frames,
+    const splitLines=s=>s.split("|").map(x=>x.trim()).filter(Boolean);
+    const npc={kind:"npc",col:c,row:r,sprite:f.sprite,frames:f.frames,
       name:f.name,givesQuest:f.givesQuest||null,
-      dialogue:f.dialogue.split("|").map(s=>s.trim()).filter(Boolean)});
+      dialogue:splitLines(f.dialogue)};
+    if(f.dialogueInProgress) npc.dialogueInProgress=splitLines(f.dialogueInProgress);
+    if(f.dialogueComplete) npc.dialogueComplete=splitLines(f.dialogueComplete);
+    if(f.shop) npc.shop=true;
+    state.entities.push(npc);
   } else if(entityType==="enemy"){
-    state.entities.push({kind:"enemy",col:c,row:r,type:f.etype});
+    const enemy={kind:"enemy",col:c,row:r,type:f.etype};
+    if(f.roam){ enemy.roam=true; enemy.roamRadius=Math.max(1,f.roamRadius||4); }
+    if(f.patrol){ enemy.patrol=[]; }    // waypoints added by clicking (see patrol mode)
+    if(f.coins!==3) enemy.coins=Math.max(0,f.coins);
+    if(f.dropId){ enemy.dropId=f.dropId; enemy.dropChance=Math.max(0,Math.min(1,f.dropChance||0.5)); enemy.dropTile=f.dropTile||"crops:80"; }
+    state.entities.push(enemy);
   } else if(entityType==="item"){
     state.entities.push({kind:"item",col:c,row:r,id:f.id,name:f.iname,tile:f.itile});
   }
+  if(typeof renderQuestCheck==="function") renderQuestCheck();
+  if(typeof renderEntityList==="function") renderEntityList();
 }
 
 // ---- Entity field UI (changes with entity type) ----
@@ -381,16 +585,52 @@ function renderEntityFields(){
       <label>NPC name</label><input id="f_name" value="Villager">
       <label>Sprite</label><select id="f_sprite"><option>cow</option><option>chicken</option></select>
       <label>Frames</label><input id="f_frames" type="number" value="8">
-      <label>Gives quest id (optional)</label><input id="f_quest" placeholder="carrot_hunt">
+      <label>Gives quest (pick one you defined)</label><select id="f_quest"></select>
+      <p class="hintline">Define quests in the Quests panel on the left, then choose one here.</p>
       <label>Dialogue (separate pages with | )</label>
-      <input id="f_dialogue" value="Hello there!|Welcome to my map.">`;
+      <input id="f_dialogue" value="Hello there!|Welcome to my map.">
+      <label>While quest in progress (optional)</label>
+      <input id="f_dialogueInProgress" placeholder="Any luck yet?|Keep looking!">
+      <label>After quest complete (optional)</label>
+      <input id="f_dialogueComplete" placeholder="Thank you!|You did it!">
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+        <input type="checkbox" id="f_shop" style="width:auto;margin:0;"> Shop keeper (opens a buy menu)
+      </label>
+      <p class="hintline">A shop NPC sells potions/upgrades for gold instead of talking.</p>`;
+    refreshNpcQuestDropdowns();
   } else if(entityType==="enemy"){
-    box.innerHTML=`<label>Enemy type</label><select id="f_etype"><option>slime</option><option>bat</option></select>`;
+    box.innerHTML=`<label>Enemy type</label><select id="f_etype"><option>slime</option><option>bat</option></select>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+        <input type="checkbox" id="f_roam" style="width:auto;margin:0;"> Roams nearby area
+      </label>
+      <p class="hintline">When on, this enemy wanders near where you place it until the player comes close.</p>
+      <label>Roam radius (tiles)</label><input id="f_roamRadius" type="number" value="4" min="1" max="20">
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+        <input type="checkbox" id="f_patrol" style="width:auto;margin:0;"> Patrol a fixed route
+      </label>
+      <p class="hintline">After placing the enemy, click it in the list below, then click map cells to add waypoints.</p>
+      <hr style="border-color:var(--edge);margin:8px 0;">
+      <label>Coins dropped on defeat</label><input id="f_coins" type="number" value="3" min="0">
+      <label>Item drop id (optional)</label><input id="f_dropId" placeholder="berry">
+      <label>Drop chance (0-1)</label><input id="f_dropChance" type="number" value="0" min="0" max="1" step="0.1">
+      <label>Drop tile (sheet:index)</label><input id="f_dropTile" value="crops:80">`;
   } else if(entityType==="item"){
     box.innerHTML=`
       <label>Item id (used by quests)</label><input id="f_id" value="carrot">
       <label>Item name</label><input id="f_iname" value="Carrot">
       <label>Tile (sheet:index)</label><input id="f_itile" value="crops:85">`;
+  } else if(entityType==="trigger"){
+    box.innerHTML=`
+      <label>Zone id (a "reach" objective targets this)</label><input id="f_tid" value="gate">
+      <label>Width (tiles)</label><input id="f_tw" type="number" value="2" min="1" max="20">
+      <label>Height (tiles)</label><input id="f_th" type="number" value="2" min="1" max="20">
+      <p class="hintline">Click the map to drop an invisible zone. When the player walks in, any quest "reach" objective with this id completes. Make a quest objective of type "reach" with the same target id.</p>`;
+  } else if(entityType==="door"){
+    box.innerHTML=`
+      <label>Target map (file name, no .json)</label><input id="f_dmap" value="map_shop_interior">
+      <label>Arrive at column</label><input id="f_dcol" type="number" value="7" min="0">
+      <label>Arrive at row</label><input id="f_drow" type="number" value="8" min="0">
+      <p class="hintline">Click the map to drop a door. Stepping on it loads the target map and places the player at the arrive column/row. Give that map a door back to return.</p>`;
   }
 }
 function getEntityFieldValues(){
@@ -398,8 +638,20 @@ function getEntityFieldValues(){
   return {
     name:g("f_name")?.value, sprite:g("f_sprite")?.value, frames:parseInt(g("f_frames")?.value||8),
     givesQuest:g("f_quest")?.value, dialogue:g("f_dialogue")?.value||"...",
+    dialogueInProgress:g("f_dialogueInProgress")?.value||"",
+    dialogueComplete:g("f_dialogueComplete")?.value||"",
+    shop:g("f_shop")?.checked||false,
     etype:g("f_etype")?.value||"slime",
+    roam:g("f_roam")?.checked||false,
+    roamRadius:parseInt(g("f_roamRadius")?.value||4),
+    patrol:g("f_patrol")?.checked||false,
+    coins:parseInt(g("f_coins")?.value??3),
+    dropId:g("f_dropId")?.value||"",
+    dropChance:parseFloat(g("f_dropChance")?.value||0),
+    dropTile:g("f_dropTile")?.value||"crops:80",
     id:g("f_id")?.value||"carrot", iname:g("f_iname")?.value||"Item", itile:g("f_itile")?.value||"crops:85",
+    tid:g("f_tid")?.value||"gate", tw:parseInt(g("f_tw")?.value||2), th:parseInt(g("f_th")?.value||2),
+    dmap:g("f_dmap")?.value||"map_shop_interior", dcol:parseInt(g("f_dcol")?.value||7), drow:parseInt(g("f_drow")?.value||8),
   };
 }
 
@@ -412,20 +664,26 @@ function exportMap(){
     ground:state.ground.slice(), overlay:(state.overlay||[]).slice(), decor:state.decor.slice(), solid:state.solid.slice(),
     playerStart:{x:state.playerStart.col*SCALED, y:state.playerStart.row*SCALED},
     music:document.getElementById("mapMusic").value,
-    quests:state.quests||[], // quests are edited by hand or kept from import
+    quests:(state.quests||[]).map(q=>({
+      ...q,
+      objectives:(q.objectives||[]).map(o=>({...o, needed:Math.max(1, parseInt(o.needed)||1)}))
+    })),
     entities:state.entities.map(e=>{
       const base={kind:e.kind,x:e.col*SCALED,y:e.row*SCALED};
-      if(e.kind==="npc")return{...base,sprite:e.sprite,frames:e.frames,name:e.name,givesQuest:e.givesQuest,dialogue:e.dialogue};
-      if(e.kind==="enemy")return{...base,type:e.type};
+      if(e.kind==="npc"){const n={...base,sprite:e.sprite,frames:e.frames,name:e.name,givesQuest:e.givesQuest,dialogue:e.dialogue};if(e.dialogueInProgress)n.dialogueInProgress=e.dialogueInProgress;if(e.dialogueComplete)n.dialogueComplete=e.dialogueComplete;if(e.shop)n.shop=true;return n;}
+      if(e.kind==="enemy"){const en={...base,type:e.type};if(e.roam){en.roam=true;en.roamRadius=e.roamRadius||4;}if(e.patrol&&e.patrol.length)en.patrol=e.patrol;if(e.coins!==undefined&&e.coins!==3)en.coins=e.coins;if(e.dropId){en.dropId=e.dropId;en.dropChance=e.dropChance||0.5;en.dropTile=e.dropTile||"crops:80";}return en;}
       if(e.kind==="item")return{...base,id:e.id,name:e.name,tile:e.tile};
       return base;
     }),
+    triggers:(state.triggers||[]).map(z=>({id:z.id,col:z.col,row:z.row,w:z.w||1,h:z.h||1})),
+    doors:(state.doors||[]).map(d=>({col:d.col,row:d.row,w:1,h:1,toMap:d.toMap,toCol:d.toCol,toRow:d.toRow})),
   };
   const blob=new Blob([JSON.stringify(out,null,2)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
   a.download=(out.name||"map").replace(/\s+/g,"_").toLowerCase()+".json";
   a.click();
+  if(typeof toast==="function") toast("Exported "+a.download);
 }
 
 // ---- Import (turns pixel coords back into editor tile coords) ----
@@ -439,15 +697,19 @@ function importMap(data){
   state.playerStart={col:Math.round(data.playerStart.x/SCALED),row:Math.round(data.playerStart.y/SCALED)};
   state.entities=(data.entities||[]).map(e=>{
     const base={kind:e.kind,col:Math.round(e.x/SCALED),row:Math.round(e.y/SCALED)};
-    if(e.kind==="npc")return{...base,sprite:e.sprite,frames:e.frames,name:e.name,givesQuest:e.givesQuest,dialogue:e.dialogue};
-    if(e.kind==="enemy")return{...base,type:e.type};
+    if(e.kind==="npc"){const n={...base,sprite:e.sprite,frames:e.frames,name:e.name,givesQuest:e.givesQuest,dialogue:e.dialogue};if(e.dialogueInProgress)n.dialogueInProgress=e.dialogueInProgress;if(e.dialogueComplete)n.dialogueComplete=e.dialogueComplete;if(e.shop)n.shop=true;return n;}
+    if(e.kind==="enemy"){const en={...base,type:e.type};if(e.roam){en.roam=true;en.roamRadius=e.roamRadius||4;}if(e.patrol&&e.patrol.length)en.patrol=e.patrol;if(e.coins!==undefined&&e.coins!==3)en.coins=e.coins;if(e.dropId){en.dropId=e.dropId;en.dropChance=e.dropChance||0.5;en.dropTile=e.dropTile||"crops:80";}return en;}
     if(e.kind==="item")return{...base,id:e.id,name:e.name,tile:e.tile};
     return base;
   });
+  state.triggers=(data.triggers||[]).map(z=>({id:z.id,col:z.col,row:z.row,w:z.w||1,h:z.h||1}));
+  state.doors=(data.doors||[]).map(d=>({col:d.col,row:d.row,w:1,h:1,toMap:d.toMap,toCol:d.toCol,toRow:d.toRow}));
   document.getElementById("mapName").value=data.name||"Imported Map";
   document.getElementById("mapW").value=state.width;
   document.getElementById("mapH").value=state.height;
   resizeCanvas(); renderMap();
+  if(typeof renderQuests==="function") renderQuests();
+  if(typeof renderEntityList==="function") renderEntityList();
 }
 
 // =============================================================
@@ -469,11 +731,20 @@ document.querySelectorAll("#toolButtons button").forEach(b=>b.onclick=()=>{
 const tsSelect=document.getElementById("tilesetSelect");
 Object.keys(TILESETS).forEach(n=>{const o=document.createElement("option");o.value=o.textContent=n;tsSelect.appendChild(o);});
 tsSelect.onchange=()=>{currentTileset=tsSelect.value;selectedTile=0;renderPalette();};
+// Palette zoom controls
+function setZoom(z){ paletteZoom=Math.max(0.5,Math.min(4,z)); renderPalette(); }
+document.getElementById("zoomIn").onclick=()=>setZoom(paletteZoom+0.5);
+document.getElementById("zoomOut").onclick=()=>setZoom(paletteZoom-0.5);
+document.getElementById("zoomReset").onclick=()=>setZoom(1);
+// Ctrl/Cmd + wheel over the palette also zooms
+document.querySelector(".pickwrap").addEventListener("wheel",(e)=>{
+  if(e.ctrlKey||e.metaKey){ e.preventDefault(); setZoom(paletteZoom + (e.deltaY<0?0.25:-0.25)); }
+},{passive:false});
 
 document.getElementById("entityType").onchange=e=>{entityType=e.target.value;renderEntityFields();};
 document.getElementById("resizeBtn").onclick=()=>{
   const w=parseInt(document.getElementById("mapW").value),h=parseInt(document.getElementById("mapH").value);
-  if(confirm("Resizing clears the current map. Continue?")){blankMap(w,h);renderMap();}
+  if(confirm("Resizing clears the current map. Continue?")){History.record();blankMap(w,h);renderMap();}
 };
 document.getElementById("exportBtn").onclick=exportMap;
 document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
@@ -489,23 +760,278 @@ document.getElementById("loadStarterBtn").onclick=async()=>{
 
 // Palette click
 palCanvas.onclick=e=>{
-  const cell=palCanvas._cell;
+  const cell=palCanvas._cell, cols=palCanvas._cols;
   const {c,r}=cellFromEvent(palCanvas,e,cell);
-  const i=r*PALETTE_COLS+c;
-  if(i>=0&&i<palCanvas._total){selectedTile=i;renderPalette();}
+  const i=r*cols+c;
+  if(c>=0&&c<cols&&i>=0&&i<palCanvas._total){selectedTile=i;renderPalette();}
 };
 // Map paint (drag to paint)
-mapCanvas.onmousedown=e=>{painting=true;const{c,r}=cellFromEvent(mapCanvas,e,CELL);applyAt(c,r);};
+mapCanvas.onmousedown=e=>{painting=true;History.record();const{c,r}=cellFromEvent(mapCanvas,e,CELL);applyAt(c,r);};
 mapCanvas.onmousemove=e=>{if(!painting||layer==="entity"||tool==="fill")return;const{c,r}=cellFromEvent(mapCanvas,e,CELL);applyAt(c,r);};
 window.onmouseup=()=>painting=false;
 // Keyboard shortcuts
 window.addEventListener("keydown",e=>{
-  if(e.key==="1")setLayer("ground");if(e.key==="2")setLayer("overlay");
-  if(e.key==="3")setLayer("decor");if(e.key==="4")setLayer("solid");
+  // Don't fire layer/shortcut keys while the user is typing in a text field,
+  // or you can't type numbers into quest ids, titles, counts, etc.
+  const t=e.target, tag=t&&t.tagName;
+  const typing = tag==="INPUT" || tag==="TEXTAREA" || tag==="SELECT" || (t&&t.isContentEditable);
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){ e.preventDefault(); exportMap(); return; }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){ e.preventDefault(); History.undo(); return; }
+  if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==="y"||(e.shiftKey&&e.key.toLowerCase()==="z"))){ e.preventDefault(); History.redo(); return; }
+  if(typing) return;   // let the field handle the keystroke
+  if(e.key==="1")setLayer("ground");
+  if(e.key==="2")setLayer("overlay");
+  if(e.key==="3")setLayer("decor");
+  if(e.key==="4")setLayer("solid");
   if(e.key==="5")setLayer("entity");
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"){e.preventDefault();exportMap();}
 });
 window.addEventListener("resize",renderPalette);
+
+// =============================================================
+//  QUEST EDITOR - define quests and objectives in the UI
+// =============================================================
+const OBJ_TYPES = ["collect", "defeat", "talk", "reach"];
+
+function ensureQuests(){ if(!Array.isArray(state.quests)) state.quests=[]; }
+
+// What ids/types are available to target, gathered from placed entities?
+function placedItemIds(){ return [...new Set(state.entities.filter(e=>e.kind==="item").map(e=>e.id).filter(Boolean))]; }
+function placedEnemyTypes(){ return [...new Set(state.entities.filter(e=>e.kind==="enemy").map(e=>e.type).filter(Boolean))]; }
+function placedNpcNames(){ return [...new Set(state.entities.filter(e=>e.kind==="npc").map(e=>e.name).filter(Boolean))]; }
+
+// suggestion pills for an objective target, based on its type
+function targetSuggestions(type){
+  if(type==="collect") return placedItemIds();
+  if(type==="defeat")  return placedEnemyTypes();
+  if(type==="talk")    return placedNpcNames();
+  return [];
+}
+
+function addQuest(){
+  ensureQuests();
+  if(typeof History!=="undefined") History.record();
+  let n=state.quests.length+1, id="quest_"+n;
+  while(state.quests.some(q=>q.id===id)){ n++; id="quest_"+n; }
+  state.quests.push({ id, title:"New Quest", description:"", objectives:[
+    { type:"collect", target:"", needed:1, text:"" }
+  ]});
+  renderQuests();
+}
+function deleteQuest(i){
+  if(confirm("Delete this quest? NPCs that gave it will need a new quest.")){
+    if(typeof History!=="undefined") History.record();
+    state.quests.splice(i,1); renderQuests();
+  }
+}
+function addObjective(qi){
+  if(typeof History!=="undefined") History.record();
+  state.quests[qi].objectives.push({ type:"collect", target:"", needed:1, text:"" });
+  renderQuests();
+}
+function deleteObjective(qi,oi){
+  if(typeof History!=="undefined") History.record();
+  state.quests[qi].objectives.splice(oi,1);
+  if(state.quests[qi].objectives.length===0) addObjective(qi);
+  else renderQuests();
+}
+
+// Validate quest <-> NPC <-> entity wiring, return a list of human-readable problems.
+function validateQuests(){
+  ensureQuests();
+  const problems=[];
+  const questIds=state.quests.map(q=>q.id);
+  const items=placedItemIds(), enemies=placedEnemyTypes(), npcs=placedNpcNames();
+  const dup=questIds.filter((id,i)=>questIds.indexOf(id)!==i);
+  if(dup.length) problems.push(`Two quests share the id "${dup[0]}". Ids must be unique.`);
+  for(const e of state.entities){
+    if(e.kind==="npc" && e.givesQuest && !questIds.includes(e.givesQuest))
+      problems.push(`NPC "${e.name||"?"}" gives quest "${e.givesQuest}", but no quest has that id.`);
+  }
+  for(const q of state.quests){
+    const giver=state.entities.some(e=>e.kind==="npc"&&e.givesQuest===q.id);
+    if(!giver && !q.autoStart) problems.push(`Quest "${q.id}" isn't given by any NPC - place an NPC and set its "Gives quest" to "${q.id}", or tick "Auto-start" to make it an achievement.`);
+    for(const o of q.objectives){
+      if(!o.target){ problems.push(`Quest "${q.id}" has an objective with no target set.`); continue; }
+      if(o.type==="collect" && !items.includes(o.target))
+        problems.push(`Quest "${q.id}" collects "${o.target}", but no item with that id is on the map.`);
+      if(o.type==="defeat" && !enemies.includes(o.target))
+        problems.push(`Quest "${q.id}" defeats "${o.target}", but no enemy of that type is placed.`);
+      if(o.type==="talk" && !npcs.includes(o.target))
+        problems.push(`Quest "${q.id}" needs talking to "${o.target}", but no NPC has that name.`);
+    }
+  }
+  return problems;
+}
+
+function renderQuestCheck(){
+  const box=document.getElementById("questCheck");
+  const problems=validateQuests();
+  if(state.quests.length===0){ box.innerHTML=""; return; }
+  if(problems.length===0){
+    box.innerHTML=`<div class="check ok">&#10003; All quests are wired up correctly.</div>`;
+  } else {
+    box.innerHTML=`<div class="check warn"><b>${problems.length} thing(s) to fix:</b><br>`+
+      problems.map(p=>"&bull; "+p).join("<br>")+`</div>`;
+  }
+}
+
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function renderQuests(){
+  ensureQuests();
+  const list=document.getElementById("questList");
+  list.innerHTML="";
+  state.quests.forEach((q,qi)=>{
+    const card=document.createElement("div");
+    card.className="questCard";
+    const objsHtml=q.objectives.map((o,oi)=>{
+      const sugg=targetSuggestions(o.type);
+      const pills=sugg.length? `<div>${sugg.map(s=>`<span class="pill" data-qi="${qi}" data-oi="${oi}" data-val="${esc(s)}">${esc(s)}</span>`).join("")}</div>` : "";
+      const ph=o.type==='collect'?'item id e.g. carrot':o.type==='defeat'?'enemy type e.g. slime':o.type==='talk'?'npc name e.g. Pip':'location id';
+      return `<div class="obj">
+        <div class="objrow">
+          <select data-qi="${qi}" data-oi="${oi}" data-k="type">
+            ${OBJ_TYPES.map(t=>`<option ${t===o.type?"selected":""}>${t}</option>`).join("")}
+          </select>
+          <input class="small" type="number" min="1" data-qi="${qi}" data-oi="${oi}" data-k="needed" value="${o.needed||1}" title="How many">
+          <button class="del" data-delobj data-qi="${qi}" data-oi="${oi}" title="Remove objective">&times;</button>
+        </div>
+        <input data-qi="${qi}" data-oi="${oi}" data-k="target" value="${esc(o.target)}" placeholder="${ph}">
+        ${pills}
+        <input data-qi="${qi}" data-oi="${oi}" data-k="text" value="${esc(o.text)}" placeholder="HUD label e.g. Collect carrots">
+      </div>`;
+    }).join("");
+    card.innerHTML=`
+      <div class="qhead">
+        <span class="qid">${esc(q.id)}</span>
+        <button class="del" data-delquest data-qi="${qi}">Delete</button>
+      </div>
+      <label>Quest id (NPCs point at this)</label>
+      <input data-qi="${qi}" data-k="id" value="${esc(q.id)}">
+      <label>Title (shown to the player)</label>
+      <input data-qi="${qi}" data-k="title" value="${esc(q.title)}">
+      <label>Description</label>
+      <input data-qi="${qi}" data-k="description" value="${esc(q.description)}">
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;cursor:pointer;">
+        <input type="checkbox" data-qi="${qi}" data-k="autoStart" ${q.autoStart?"checked":""} style="width:auto;margin:0;">
+        Auto-start (an achievement - begins on its own, no NPC needed)
+      </label>
+      <label>Objectives</label>
+      ${objsHtml}
+      <button data-addobj data-qi="${qi}" style="width:100%;">+ Add objective</button>`;
+    list.appendChild(card);
+  });
+
+  list.querySelectorAll("input[data-qi],select[data-qi]").forEach(el=>{
+    el.oninput=()=>{
+      const qi=+el.dataset.qi, k=el.dataset.k;
+      if(el.dataset.oi!==undefined){
+        const oi=+el.dataset.oi, o=state.quests[qi].objectives[oi];
+        if(k==="needed") o[k]=Math.max(1,parseInt(el.value)||1);
+        else o[k]=el.value;
+        if(k==="type"){ renderQuests(); return; }
+      } else {
+        if(k==="autoStart"){ state.quests[qi].autoStart=el.checked; renderQuestCheck(); return; }
+        state.quests[qi][k]=el.value;
+        if(k==="id"){
+          // update the header pill in place (don't re-render - keep typing focus)
+          const card=el.closest(".questCard");
+          const pill=card && card.querySelector(".qid");
+          if(pill) pill.textContent=el.value;
+        }
+      }
+      renderQuestCheck(); refreshNpcQuestDropdowns();
+    };
+  });
+  list.querySelectorAll("[data-delquest]").forEach(b=>b.onclick=()=>deleteQuest(+b.dataset.qi));
+  list.querySelectorAll("[data-addobj]").forEach(b=>b.onclick=()=>addObjective(+b.dataset.qi));
+  list.querySelectorAll("[data-delobj]").forEach(b=>b.onclick=()=>deleteObjective(+b.dataset.qi,+b.dataset.oi));
+  list.querySelectorAll(".pill").forEach(p=>p.onclick=()=>{
+    state.quests[+p.dataset.qi].objectives[+p.dataset.oi].target=p.dataset.val;
+    renderQuests();
+  });
+  renderQuestCheck();
+  refreshNpcQuestDropdowns();
+}
+
+// keep the NPC "gives quest" dropdown in sync with defined quests
+function refreshNpcQuestDropdowns(){
+  const sel=document.getElementById("f_quest");
+  if(!sel) return;
+  const cur=sel.value;
+  ensureQuests();
+  const opts=['<option value="">(none)</option>']
+    .concat(state.quests.map(q=>`<option value="${esc(q.id)}" ${q.id===cur?"selected":""}>${esc(q.id)}</option>`));
+  sel.innerHTML=opts.join("");
+}
+
+// A scannable list of everything placed on the map, so you can verify quest wiring.
+function renderEntityList(){
+  const box=document.getElementById("entityList");
+  if(!box) return;
+  const ents=state.entities||[];
+  if(ents.length===0){ box.innerHTML=`<p class="hintline">Nothing placed yet.</p>`; return; }
+  const colors={npc:"#1c8fa8",enemy:"#d64545",item:"#3a9d4f",trigger:"#c98a2b"};
+  const rows=ents.map((e,i)=>{
+    let label, sub, extra="";
+    if(e.kind==="npc"){ label=esc(e.name||"NPC"); sub=e.shop?"shop keeper":(e.givesQuest?("gives "+esc(e.givesQuest)):"no quest"); }
+    else if(e.kind==="enemy"){
+      label=esc(e.type||"enemy");
+      const tags=[];
+      if(e.patrol&&e.patrol.length) tags.push("patrol "+e.patrol.length+"pts");
+      else if(e.roam) tags.push("roams r"+(e.roamRadius||4));
+      if(e.dropId) tags.push("drops "+esc(e.dropId));
+      sub=tags.length?tags.join(", "):"enemy";
+      const editing = patrolEditIndex===i;
+      extra=`<button class="del eRoute" data-i="${i}" title="Add patrol waypoints by clicking the map" style="background:${editing?'#5fa86f':''}">${editing?'Done':'Route'}</button>`;
+    }
+    else if(e.kind==="item"){ label=esc(e.id||"item"); sub="item"; }
+    else { label=esc(e.kind); sub=""; }
+    return `<div class="entRow" data-i="${i}" title="Click to jump to it">
+      <span class="dot" style="background:${colors[e.kind]||'#888'}"></span>
+      <span class="eName">${label}</span>
+      <span class="eSub">${sub}</span>
+      <span class="eAt">(${e.col},${e.row})</span>
+      ${extra}
+      <button class="del eDel" data-i="${i}" title="Remove">&times;</button>
+    </div>`;
+  }).join("");
+  box.innerHTML=rows;
+  box.querySelectorAll(".entRow").forEach(row=>{
+    row.querySelector(".eName").onclick=()=>{
+      // scroll the map so this entity is visible, and flash it
+      const e=state.entities[+row.dataset.i];
+      if(!e) return;
+      const stage=document.querySelector(".stage");
+      stage.scrollLeft=e.col*CELL - stage.clientWidth/2;
+      stage.scrollTop=e.row*CELL - stage.clientHeight/2;
+      flashCell=e; renderMap(); setTimeout(()=>{flashCell=null;renderMap();},700);
+    };
+  });
+  box.querySelectorAll(".eDel").forEach(btn=>btn.onclick=()=>{
+    History.record();
+    if(patrolEditIndex===+btn.dataset.i) patrolEditIndex=null;
+    state.entities.splice(+btn.dataset.i,1);
+    renderMap(); renderEntityList();
+    if(typeof renderQuestCheck==="function") renderQuestCheck();
+    if(typeof renderQuests==="function") refreshNpcQuestDropdowns();
+  });
+  box.querySelectorAll(".eRoute").forEach(btn=>btn.onclick=(ev)=>{
+    ev.stopPropagation();
+    const i=+btn.dataset.i;
+    // toggle patrol-edit mode for this enemy
+    patrolEditIndex = (patrolEditIndex===i) ? null : i;
+    if(patrolEditIndex!==null){
+      const e=state.entities[i]; if(e&&!e.patrol) e.patrol=[];
+      // make sure we're on the entity layer so map clicks land on placeEntity
+      if(typeof setLayer==="function") setLayer("entity");
+      if(typeof toast==="function") toast("Click map cells to add waypoints. Press Route again (Done) to finish.");
+    }
+    renderMap(); renderEntityList();
+  });
+}
+let flashCell=null;
+
 
 // ---- Boot ----
 (async function(){
@@ -515,6 +1041,32 @@ window.addEventListener("resize",renderPalette);
   renderEntityFields();
   renderPalette();
   renderMap();
+  document.getElementById("addQuestBtn").onclick=addQuest;
+  document.getElementById("undoBtn").onclick=()=>History.undo();
+  document.getElementById("redoBtn").onclick=()=>History.redo();
+  document.getElementById("clearLayerBtn").onclick=()=>{
+    const names={ground:"Ground",overlay:"Overlay",decor:"Decor",solid:"Solid",entity:"Entities"};
+    if(!confirm(`Clear the entire ${names[layer]} layer?`)) return;
+    History.record();
+    if(layer==="ground"||layer==="overlay"||layer==="decor"){
+      state[layer]=new Array(state.width*state.height).fill("");
+    } else if(layer==="solid"){
+      state.solid=new Array(state.width*state.height).fill(0);
+    } else if(layer==="entity"){
+      state.entities=[];
+      if(typeof renderQuestCheck==="function") renderQuestCheck();
+      if(typeof renderEntityList==="function") renderEntityList();
+    }
+    renderMap(); toast(`Cleared ${names[layer]} layer`);
+  };
+  renderQuests();
+  renderEntityList();
+  // Exposed for the browser console (and tests): inspect or tweak the live map,
+  // e.g. type `state.quests` or `addQuest()` in the console.
+  window.state=state; window.addQuest=addQuest; window.renderQuests=renderQuests;
+  window.renderQuestCheck=renderQuestCheck; window.validateQuests=validateQuests;
+  window.renderMap=renderMap; window.renderEntityList=renderEntityList;
+  window.importMap=importMap; window.placeEntity=placeEntity;
 })();
 </script>
 </body>

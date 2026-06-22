@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabbit Run: Tales of the Warren RPG</title>
+  <style>
+    /* ---------------------------------------------------------
+       The page is just a dark cozy frame around the game canvas.
+       The game itself draws everything inside the <canvas>.
+       --------------------------------------------------------- */
+        :root {
+      --bg: #cfe2f3;
+      --frame: #e7f1fb;
+      --edge: #7fb2dc;
+      --text: #2d3e50;
+      --accent: #4a7ba6;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      background:
+        radial-gradient(circle at 50% -10%, #eaf4ff 0%, var(--bg) 75%);
+      color: var(--text);
+      font-family: "Courier New", monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      overflow: hidden;
+    }
+    h1 {
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-shadow: 1px 1px 0 #ffffff;
+      font-size: 22px;
+    }
+    /* The crisp pixel-art canvas. image-rendering keeps it sharp. */
+    #game {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 4px solid var(--edge);
+      border-radius: 6px;
+      background: #bfe0f2;
+      box-shadow: 0 10px 30px rgba(74,123,166,0.25), 0 0 0 8px var(--frame);
+      max-width: 96vw;
+      max-height: 80vh;
+    }
+    .controls {
+      font-size: 12px;
+      color: #5a7a93;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .controls b { color: var(--text); font-weight: 700; }
+    .credit { font-size: 10px; color: #8aa6bf; }
+  </style>
+</head>
+<body>
+  <h1>✦ RABBIT RUN: TALES OF THE WARREN ✦</h1>
+
+  <!-- The whole game renders inside this single canvas element. -->
+  <canvas id="game"></canvas>
+
+  <div class="controls">
+    <b>Arrows / WASD</b> move &nbsp;&bull;&nbsp; <b>Space</b> attack &nbsp;&bull;&nbsp; <b>T</b> talk
+    &nbsp;&bull;&nbsp; <b>I</b> inventory &nbsp;&bull;&nbsp; <b>Q</b> quest log
+  </div>
+  <div class="credit">Assets from "Little Dreamyland" by Starmixu &amp; Utaskuas (non-commercial)</div>
+
+  <!-- type="module" lets us use import/export to split code into files. -->
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
