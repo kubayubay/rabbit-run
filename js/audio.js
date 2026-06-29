@@ -18,7 +18,7 @@ export const Sound = {
     if (!a) return;
     // cloneNode lets the same sound overlap with itself (e.g. rapid hits).
     const clip = a.cloneNode();
-    clip.volume = CONFIG.SFX_VOLUME;
+    clip.volume = 0.6;
     clip.play().catch(() => {}); // ignore "user hasn't interacted yet" errors
   },
 

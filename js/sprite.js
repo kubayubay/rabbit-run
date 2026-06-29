@@ -19,3 +19,35 @@
 // ============================================================================
 
 // TODO: build this file here.
+import { CONFIG } from './config.js'
+import { Images} from './assets.js'
+   
+export class SpriteAnimator {
+    constructor(frameSize = CONFIG.PLAYER_FRAME_SIZE) {
+        this.frameSize = frameSize;
+        this.frameIndex = 0;
+        this.timer = 0;
+        this.frameDuration = 1 / CONFIG.ANIM_FPS;
+    }
+
+    update(dt, frameCount) {
+        this.timer += dt;
+        if (this.timer >= this.frameDuration) {
+            this.timer -= this.frameDuration;
+            this.frameIndex = (this.frameIndex + 1) % frameCount;
+        }
+    }
+
+    reset() { this.frameIndex - 0; this.timer = 0; }
+
+    draw(ctx, imageName, row, x, y) {
+        const img = Images[imageName];
+        if (!img) return;
+        const sx = this.frameIndex * this.frameSize;
+        const sy = row * this.frameSize;
+        const size = this.frameSize * CONFIG.SCALE;
+        ctx.drawImage(img, sx, sy, this.frameSize, this.frameSize, x, y, size, size);
+
+    }
+}
+export const DIR = { UP: 0, DOWN: 3, LEFT: 2, RIGHT: 1 };

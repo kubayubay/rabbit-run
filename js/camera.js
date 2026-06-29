@@ -14,3 +14,23 @@
 // ============================================================================
 
 // TODO: build this file here.
+import { CONFIG } from "./config.js";
+
+export class Camera {
+    constructor() {
+        this.x = 0
+        this.y = 0
+    }
+    follow(target, map){
+        this.x = target.x + target.width/2 - CONFIG.CANVAS_WIDTH / 2;
+        this.y = target.y + target.height/2 - CONFIG.CANVAS_HEIGHT / 2;
+
+        this.x = Math.max(0,Math.min(this.x,map.pixelWidth-CONFIG.CANVAS_WIDTH))
+        this.y = Math.max(0, Math.min(this.y, map.pixelHeight - CONFIG.CANVAS_HEIGHT))
+
+        if(map.pixelWidth < CONFIG.CANVAS_WIDTH)
+            this.x = (map.pixelWidth - CONFIG.CANVAS_WIDTH) / 2;
+        if(map.pixelHeight < CONFIG.CANVAS_HEIGHT)
+            this.y = (map.pixelHeight - CONFIG.CANVAS_HEIGHT) / 2;
+    }
+}
