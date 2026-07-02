@@ -333,7 +333,7 @@ this.enemies.push(new Enemy({
             UI.drawInventory(ctx,this.inventory);
         }
         if(this.state === STATE.GAMEOVER){
-            UI.drawScreen(ctx, "Game Over", "Press ENTER to try again", "#f08a8a");
+            UI.drawScreen(ctx, "Game Over", "Press ENTER or SPACE to try again", "#f08a8a");
         }
         if(this.state === STATE.WIN){
             UI.drawScreen(ctx, "You Win!", "Enter for title", "#9ad9b0");

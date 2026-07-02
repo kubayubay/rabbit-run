@@ -28,19 +28,19 @@
         slime : {
             idleSheet: "slime_idle", hurtSheet : "slime_hurt", deathSheet : "slime_death",
             idleFrames : 8, hurtFrames : 2, deathFrames : 4,
-            hp : 15 + CONFIG.PLAYER_MAX_HP * 0.2, speed:20, damage:3, sightRange:120, attackRange:30, xp:5,
+            hp : 15 + CONFIG.PLAYER_MAX_HP * 0.4, speed:30, damage:5, sightRange:120, attackRange:30, xp:7,
             scale: 1.5
         },
         bat : {
             idleSheet: "bat_idle", hurtSheet : "bat_hurt", deathSheet : "bat_death",
             idleFrames : 4, hurtFrames : 2, deathFrames : 5,
-            hp : 6 + CONFIG.PLAYER_MAX_HP * 0.2, speed:60, damage:2, sightRange:160, attackRange:28, xp:4,
+            hp : 6 + CONFIG.PLAYER_MAX_HP * 0.3, speed:90, damage:4, sightRange:160, attackRange:28, xp:5,
             scale: 1.2
         },
         rat : {
             idleSheet: "rat_idle", hurtSheet : "rat_hurt", deathSheet : "rat_death",
             idleFrames : 4, hurtFrames : 4, deathFrames : 8,
-            hp : 3 + CONFIG.PLAYER_MAX_HP * 0.2, speed:90, damage:6, sightRange:120, attackRange:20, xp:2,
+            hp : 3 + CONFIG.PLAYER_MAX_HP * 0.1, speed:110, damage:9, sightRange:120, attackRange:20, xp:3,
             scale: 0.3
         },
     };
@@ -180,7 +180,7 @@
             id: "berry",
             name: "Berry",
             tile: "crops:88",
-            heal: 5 + CONFIG.PLAYER_MAX_HP * 0.25,
+            heal: 5 + CONFIG.PLAYER_MAX_HP * 0.2,
             damage: 3,
         },
         {
@@ -194,7 +194,7 @@
             id: "cabbage",
             name: "Cabbage",
             tile: "crops:86",
-            maxHealth: 3,
+            maxHealth: 5,
             heal: 3,
         },
         {

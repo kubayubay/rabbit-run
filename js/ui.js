@@ -136,10 +136,10 @@ export const UI = {
         ctx.fillStyle = COLORS.text;
         ctx.font = "12px monospace";
         ctx.textAlign = "left";
-        ctx.fillText(`attackSpeed: ${player.attackSpeed.toFixed(2)}`, x + 10, y + 24);
-        ctx.fillText(`attackDamage: ${player.attackDamage}`, x + 10, y + 42);
-        ctx.fillText(`attackRange: ${player.attackRange}`, x + 10, y + 60);
-        ctx.fillText(`armor: ${player.armor}`, x + 10, y + 78);
+        ctx.fillText(`attackSpeed: ${player.attackSpeed.toFixed(2)}`, x + 10, y + 20);
+        ctx.fillText(`attackDamage: ${player.attackDamage}`, x + 10, y + 38);
+        ctx.fillText(`attackRange: ${player.attackRange}`, x + 10, y + 56);
+        ctx.fillText(`armor: ${player.armor}`, x + 10, y + 74);
     },
 
     drawPrompt(ctx, text){
@@ -197,7 +197,7 @@ export const UI = {
         ctx.fillStyle = COLORS.accent;
         ctx.font = "old 18px monospace";
         ctx.textAlign = "center";
-        ctx.fillText("INVENTORY", CONFIG.CANVAS_WIDTH/2, y + 30);
+        ctx.fillText("PAUSED", CONFIG.CANVAS_WIDTH/2, y + 30);
 
         const items = inventory.list();
         ctx.textAlign = "left";
